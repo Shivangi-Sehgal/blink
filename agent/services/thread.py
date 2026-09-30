@@ -172,16 +172,23 @@ class Thread:
             new_thread.messages = []
             # Now add the messages to the new thread which is system prompt and the compression report as the HumanMessage.
             if len(root.messages) > 0 and isinstance(root.messages[0], SystemMessage):
-                new_thread.append(root.messages[0])
+                new_thread.append(root[0])    # Here we have used __getitem__ magic function to get the message at that particular index.
             
             new_thread.append(HumanMessage(compression_report))
 
 
-
-
-    # To make the new thread
+    # To make the new thread instance.
     def __copy__(self):
         new_instance = Thread()
         return new_instance
+
+
+    # To get the message at the particular index.
+    def __getitem__(self, index):
+        if self.tail is not None:
+            return self.tail.messages[index]
+
+        else:
+            self.messages[index]
 
 
