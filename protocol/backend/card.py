@@ -4,7 +4,7 @@ from protocol.backend.skill import get_agent_skill
 from protocol.backend.interface import get_agent_interface
 from a2a.types import AgentCard, AgentSkill, AgentInterface, AgentCapabilities
 
-def get_agent_card(agent_card : AgentCardModel):
+async def get_agent_card(agent_card: AgentCardModel):
     try:
         
         supported_interfaces = []

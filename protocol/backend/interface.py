@@ -3,7 +3,7 @@ from protocol.errors import GetAgentInterfaceError
 from a2a.types import AgentInterface
 from a2a.utils import TransportProtocol
 
-def get_agent_interface(agent_interface : AgentInterfaceModel):
+async def get_agent_interface(agent_interface: AgentInterfaceModel):
     try:
         return AgentInterface(
             url = f"http://{agent_interface.url}:{agent_interface.port}",

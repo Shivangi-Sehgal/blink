@@ -2,7 +2,7 @@ from a2a.types import AgentSkill
 from protocol.models import AgentSkillModel
 from protocol.errors import GetAgentSkillError
 
-def get_agent_skill(agent_skill : AgentSkillModel):
+async def get_agent_skill(agent_skill: AgentSkillModel):
     try:
         return AgentSkill(
             id=str(agent_skill.uuid),
