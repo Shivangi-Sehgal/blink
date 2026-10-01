@@ -267,6 +267,13 @@ class Thread:
         return new_instance
 
 
+    # To append the message to the thread using the pipe operator.
+    def __ror__(self, other: Union[SystemMessage, AIMessage, ToolMessage, HumanMessage]):
+        if self.tail is not None:
+            self.tail.append(other)
+        else:
+            self.append(other)
+
     # To get the message at the particular index.
     def __getitem__(self, index):
         if self.tail is not None:
@@ -302,3 +309,12 @@ class Thread:
             for msg in self.messages:
                 yield msg
 
+    # To return the count of SystemMessage, AIMessage, Toolmessage, HumanMessage in the Thread.
+    def __str__(self):
+        counts = self.count()
+        return json.dumps(counts, indent=4)
+
+    # To return the count of SystemMessage, AIMessage, ToolMessage, HumanMessage in the Thread.
+    def __repr__(self):
+        counts = self.count()
+        return json.dumps(counts, indent=4)
