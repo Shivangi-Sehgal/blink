@@ -1,8 +1,8 @@
+import json
 import tiktoken
-
-
-
+from pathlib import Path
 from typing import List, Dict, Optional, Union
+from agent.services.rules import ToolHideRule, AutoToolHideRule
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 
 # class Thread:
@@ -54,6 +54,42 @@ class Thread:
         self.path = Path.cwd() / "tool_results"
         self.path.mkdir(parents=True, exist_ok=True)
 
+        # If the messages are provided then we will find out the system message index and if it is not at the starting position then we will raise an error.
+        if messages is not None:
+            index = self._find_system_message(messages)
+            if index == -1 or index == 0:
+                self.messages = messages
+            else:
+                raise ValueError(
+                    f"System prompt is not at the starting position, it was found at {index} index."
+                )
+
+        # If system prompt is provided then we will find out the system message index and make the changes accordingly.
+        if self.system_prompt is not None:
+            index = self._find_system_message(self.messages)
+            if isinstance(self.system_prompt, str):
+                self.system_prompt = SystemMessage(self.system_prompt)
+
+            if index == 0:
+                if len(messages) == 0:
+                    self.append(self.system_prompt)
+                else:
+                    self.messages[0] = self.system_prompt
+            elif index == -1:
+                self.messages = [self.system_prompt] + self.messages
+            else:
+                pass
+
+
+    # To find the system message index.
+    def _find_system_message(self, messages: List[Union[SystemMessage, HumanMessage, AIMessage, ToolMessage]]):
+        for i in range(len(messages)):
+            if isinstance(messages[i], SystemMessage):
+                return i
+
+        return -1
+
+    # To get the path where the tool result has been saved after the ToolHideRules has been applied.
     @classmethod
     def get_tool_result_path(cls):
         path = Path.cwd() / "tool_results"
@@ -61,6 +97,7 @@ class Thread:
         return path
 
 
+    # To save the tool result on that particular path after applying the ToolHideRules.
     def save_tool_result(self, message: ToolMessage) -> bool:
         try:
             content = message.content
@@ -95,6 +132,7 @@ class Thread:
         return len(self.encoder.encode(str(content)))
 
 
+    # To append the message to the Thread.
     def append(self, message: Union[SystemMessage, HumanMessage, AIMessage, ToolMessage]):
         if self.root is not None:      # If we are on the main root thread
             tool_hide_rules = self.tool_hide_rules
@@ -154,6 +192,7 @@ class Thread:
 
 
 
+        # This code block is for the compression of the messages and making the new thread with the compression report.
         token_usuage = self.count_tokens()
         if self.compression_token_limit is not None and token_usuage > self.compression_token_limit and self.agent is not None and self.compression_prompt is not None:
             self.messages.append(HumanMessage(self.compression_prompt))
@@ -170,11 +209,56 @@ class Thread:
             root.tail = new_thread
 
             new_thread.messages = []
+
             # Now add the messages to the new thread which is system prompt and the compression report as the HumanMessage.
             if len(root.messages) > 0 and isinstance(root.messages[0], SystemMessage):
-                new_thread.append(root[0])    # Here we have used __getitem__ magic function to get the message at that particular index.
+                new_thread.append(root.messages[0])    # Here we have used __getitem__ magic function to get the message at that particular index.
             
             new_thread.append(HumanMessage(compression_report))
+
+        else:
+            self.messages.append(message)
+
+
+    # To count the number of SystemMessage, AIMessage, ToolMessage, HumanMessage in the Thread.
+    def count(self):
+        counts = {
+            "Depth": 0,
+            "System": 0,
+            "AI": 0,
+            "Tool": 0,
+            "Human":0,
+        }
+
+        thread = self
+        depth = 0
+
+        if isinstance(thread.messages[0], SystemMessage):
+            counts["System"] = 1
+
+        while True:
+            for msg in thread:
+                if isinstance(msg, AIMessage):
+                    counts["AI"] += 1
+
+                elif isinstance(msg, ToolMessage):
+                    counts["Tool"] += 1
+
+                elif isinstance(msg, HumanMessage):
+                    counts["Human"] += 1
+
+                else:
+                    pass
+            
+            if thread.child is None:
+                break
+
+            else:
+                thread = thread.child
+                depth += 1
+
+        counts["Depth"] = depth
+        return counts
 
 
     # To make the new thread instance.
@@ -189,6 +273,32 @@ class Thread:
             return self.tail.messages[index]
 
         else:
-            self.messages[index]
+            return self.messages[index]
 
+
+    # To set the message at the particular index.
+    def __setitem__(self, index, value):
+        if self.tail is not None:
+            self.tail.messages[index] = value
+
+        else:
+            self.messages[index] = value
+
+
+    # To get the length of the thread messages.
+    def __len__(self):
+        if self.tail is not None:
+            return len(self.tail.messages)
+
+        else:
+            return len(self.messages)
+
+    # To iterate over the messages in the Thread.
+    def __iter__(self):
+        if self.tail is not None:
+            for msg in self.tail.messages:
+                yield msg
+        else:
+            for msg in self.messages:
+                yield msg
 
