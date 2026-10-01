@@ -79,6 +79,33 @@ class Thread:
                 self.messages = [self.system_prompt] + self.messages
             else:
                 pass
+  
+    # To build a Thread from the ThreadConfig Model.
+    @classmethod
+    def from_config(cls, config: ThreadConfig):
+        tool_hide_rules = []
+        if config.auto_hide_rule:
+            tool_hide_rules.append(
+                AutoToolHideRule(
+                    token_limit = config.token_limit or int(os.getenv("DEFAULT_AUTO_TOOL_HIDE_RULE_TOKEN_LIMIT", 10_000)),
+                    per_tool_token_limit = config.per_tool_token_limit
+                )
+            )
+
+        for tool_hide_rule in config.tool_hide_rules.all():
+            tool_hide_rules.append(
+                ToolHideRule(
+                    name = tool_hide_rule.name,
+                    messsage = tool_hide_rule.message
+                )
+            )
+
+        return cls(
+            compression_prompt = config.compression_prompt.prompt,
+            compression_token_limit = config.compression_token_limit,
+            tool_hide_rules = tool_hide_rules,
+        )
+
 
 
     # To find the system message index.
