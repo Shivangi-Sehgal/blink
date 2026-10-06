@@ -1,6 +1,8 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import ToolMessage
 from typing import List, Dict, Any, Optional, Union
+from agent.services.llm import LLM
+from agent.services.thread import Thread
 
 
 # class Agent:
@@ -29,3 +31,8 @@ from typing import List, Dict, Any, Optional, Union
 
 #             else:
 #                 return response
+
+
+class Agent:
+    def __init__(self, model: LLM, tools: Optional[List] = None):
+        self.model = model.connect()
