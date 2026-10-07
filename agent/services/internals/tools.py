@@ -31,13 +31,4 @@ class InternalTools:
             except Exception as e:
                 raise str(e)
 
-        @tool("a2a_invoke")
-        async def a2a_invoke(
-            request: A2ARequest
-        ):
-            """
-            Use this tool to assign task/work to an another agent using the A2A protocol.
-            """
-
-            async with httpx.AsyncClient(timeout=None) as http:
-                
+       
